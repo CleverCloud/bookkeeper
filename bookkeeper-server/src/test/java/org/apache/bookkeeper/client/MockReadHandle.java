@@ -69,9 +69,15 @@ class MockReadHandle implements ReadHandle {
                     log.debug("readEntries: first={} last={} total={}", firstEntry, lastEntry, entries.size());
                 }
                 List<LedgerEntry> seq = new ArrayList<>();
-                long entryId = firstEntry;
-                while (entryId <= lastEntry && entryId < entries.size()) {
-                    seq.add(entries.get((int) entryId++).duplicate());
+                long entryId = Math.min(firstEntry, lastEntry);
+                while (entryId <= Math.max(firstEntry, lastEntry) && entryId < entries.size()) {
+                    if (firstEntry > lastEntry) {
+                        entryId--;
+                    } else {
+                        entryId++;
+                    }
+                    seq.add(entries.get((int) entryId).duplicate());
+                    System.out.println(seq.toString());
                 }
                 if (log.isDebugEnabled()) {
                     log.debug("Entries read: {}", seq);
