@@ -56,7 +56,8 @@ import org.slf4j.event.LoggingEvent;
 public class BookKeeperApiTest extends MockBookKeeperTestCase {
 
     private static final byte[] bigData = new byte[1024];
-    private static final byte[] data = "foo".getBytes(UTF_8);
+    private static final byte[] dataFoo = "foo".getBytes(UTF_8);
+    private static final byte[] dataBar = "bar".getBytes(UTF_8);
     private static final byte[] password = "password".getBytes(UTF_8);
 
     @Rule
@@ -72,13 +73,13 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
                 .execute())) {
 
             // test writer is able to write
-            writer.append(ByteBuffer.wrap(data));
+            writer.append(ByteBuffer.wrap(dataFoo));
             assertEquals(0L, writer.getLastAddPushed());
-            writer.append(Unpooled.wrappedBuffer(data));
+            writer.append(Unpooled.wrappedBuffer(dataFoo));
             assertEquals(1L, writer.getLastAddPushed());
-            long expectedEntryId = writer.append(ByteBuffer.wrap(data));
+            long expectedEntryId = writer.append(ByteBuffer.wrap(dataFoo));
             assertEquals(expectedEntryId, writer.getLastAddConfirmed());
-            assertEquals(3 * data.length, writer.getLength());
+            assertEquals(3 * dataFoo.length, writer.getLength());
         }
     }
 
@@ -97,11 +98,11 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
 
             // test writer is able to write
             long entryId = 0;
-            writer.write(entryId++, ByteBuffer.wrap(data));
-            writer.write(entryId++, Unpooled.wrappedBuffer(data));
-            long expectedEntryId = writer.write(entryId++, ByteBuffer.wrap(data));
+            writer.write(entryId++, ByteBuffer.wrap(dataFoo));
+            writer.write(entryId++, Unpooled.wrappedBuffer(dataFoo));
+            long expectedEntryId = writer.write(entryId++, ByteBuffer.wrap(dataFoo));
             assertEquals(expectedEntryId, writer.getLastAddConfirmed());
-            assertEquals(3 * data.length, writer.getLength());
+            assertEquals(3 * dataFoo.length, writer.getLength());
         }
     }
 
@@ -120,11 +121,11 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
 
             // test writer is able to write
             long entryId = 0;
-            writer.write(entryId++, ByteBuffer.wrap(data));
-            writer.write(entryId++, Unpooled.wrappedBuffer(data));
-            long expectedEntryId = writer.write(entryId++, ByteBuffer.wrap(data));
+            writer.write(entryId++, ByteBuffer.wrap(dataFoo));
+            writer.write(entryId++, Unpooled.wrappedBuffer(dataFoo));
+            long expectedEntryId = writer.write(entryId++, ByteBuffer.wrap(dataFoo));
             assertEquals(expectedEntryId, writer.getLastAddConfirmed());
-            assertEquals(3 * data.length, writer.getLength());
+            assertEquals(3 * dataFoo.length, writer.getLength());
         }
     }
 
@@ -140,9 +141,9 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
                 .execute())) {
             assertEquals(1234, writer.getId());
             long entryId = 0;
-            writer.write(entryId++, ByteBuffer.wrap(data));
-            assertEquals(data.length, writer.getLength());
-            writer.write(entryId - 1, ByteBuffer.wrap(data));
+            writer.write(entryId++, ByteBuffer.wrap(dataFoo));
+            assertEquals(dataFoo.length, writer.getLength());
+            writer.write(entryId - 1, ByteBuffer.wrap(dataFoo));
         }
     }
 
@@ -249,9 +250,9 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
                 .withPassword(password)
                 .execute())) {
             long lId = writer.getId();
-            // write data and populate LastAddConfirmed
-            writer.append(ByteBuffer.wrap(data));
-            writer.append(ByteBuffer.wrap(data));
+            // write dataFoo and populate LastAddConfirmed
+            writer.append(ByteBuffer.wrap(dataFoo));
+            writer.append(ByteBuffer.wrap(dataFoo));
 
             try (ReadHandle reader = result(newOpenLedgerOp()
                     .withPassword(password)
@@ -320,8 +321,8 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
             .execute())) {
             lId = writer.getId();
 
-            writer.append(ByteBuffer.wrap(data));
-            writer.append(ByteBuffer.wrap(data));
+            writer.append(ByteBuffer.wrap(dataFoo));
+            writer.append(ByteBuffer.wrap(dataFoo));
             assertEquals(1L, writer.getLastAddPushed());
 
             // open with fencing
@@ -334,7 +335,7 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
                 assertEquals(1L, reader.getLastAddConfirmed());
             }
 
-            writer.append(ByteBuffer.wrap(data));
+            writer.append(ByteBuffer.wrap(dataFoo));
 
         }
     }
@@ -382,10 +383,10 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
                 .withPassword(password)
                 .execute().get()) {
             lId = writer.getId();
-            // write data and populate LastAddConfirmed
-            writer.append(ByteBuffer.wrap(data));
-            writer.append(ByteBuffer.wrap(data));
-            writer.append(ByteBuffer.wrap(data));
+            // write dataFoo and populate LastAddConfirmed
+            writer.append(ByteBuffer.wrap(dataFoo));
+            writer.append(ByteBuffer.wrap(dataFoo));
+            writer.append(ByteBuffer.wrap(dataFoo));
         }
 
         try (ReadHandle reader = newOpenLedgerOp()
@@ -400,12 +401,12 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
                 AtomicLong i = new AtomicLong(0);
                 for (LedgerEntry e : entries) {
                     assertEquals(i.getAndIncrement(), e.getEntryId());
-                    assertArrayEquals(data, e.getEntryBytes());
+                    assertArrayEquals(dataFoo, e.getEntryBytes());
                 }
                 i.set(0);
                 entries.forEach((e) -> {
                         assertEquals(i.getAndIncrement(), e.getEntryId());
-                        assertArrayEquals(data, e.getEntryBytes());
+                        assertArrayEquals(dataFoo, e.getEntryBytes());
                     });
             }
         }
