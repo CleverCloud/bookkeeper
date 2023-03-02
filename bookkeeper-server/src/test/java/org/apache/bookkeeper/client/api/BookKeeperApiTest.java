@@ -274,10 +274,11 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
                 .withPassword(password)
                 .execute())) {
             lId = writer.getId();
-            // write data and populate LastAddConfirmed
-            writer.append(ByteBuffer.wrap(data));
-            writer.append(ByteBuffer.wrap(data));
-            writer.append(ByteBuffer.wrap(data));
+            // write dataFoo & dataBar and populate LastAddConfirmed
+            writer.append(ByteBuffer.wrap(dataFoo));
+            writer.append(ByteBuffer.wrap(dataFoo));
+            writer.append(ByteBuffer.wrap(dataBar));
+            writer.append(ByteBuffer.wrap(dataBar));
         }
 
         try (ReadHandle reader = result(newOpenLedgerOp()
@@ -286,19 +287,29 @@ public class BookKeeperApiTest extends MockBookKeeperTestCase {
             .withLedgerId(lId)
             .execute())) {
             assertTrue(reader.isClosed());
-            assertEquals(2, reader.getLastAddConfirmed());
-            assertEquals(3 * data.length, reader.getLength());
-            assertEquals(2, reader.readLastAddConfirmed());
-            assertEquals(2, reader.tryReadLastAddConfirmed());
-            checkEntries(reader.read(0, reader.getLastAddConfirmed()), data);
-            checkEntries(reader.readUnconfirmed(0, reader.getLastAddConfirmed()), data);
+            assertEquals(3, reader.getLastAddConfirmed());
+            assertEquals(2L * dataFoo.length + 2L * dataBar.length, reader.getLength());
+            assertEquals(3, reader.readLastAddConfirmed());
+            assertEquals(3, reader.tryReadLastAddConfirmed());
+            checkEntries(reader.read(reader.getLastAddConfirmed(), 3), dataBar);
+            checkEntries(reader.read(0, 1), dataFoo);
+            checkEntries(reader.readUnconfirmed(0, 1), dataFoo);
+            checkEntries(reader.read(3, 2), dataBar);
+            checkEntries(reader.read(1, 0), dataFoo);
 
             // test readLastAddConfirmedAndEntry
-            LastConfirmedAndEntry lastConfirmedAndEntry =
+            LastConfirmedAndEntry lastConfirmedAndEntryFoo =
                 reader.readLastAddConfirmedAndEntry(0, 999, false);
-            assertEquals(2L, lastConfirmedAndEntry.getLastAddConfirmed());
-            assertArrayEquals(data, lastConfirmedAndEntry.getEntry().getEntryBytes());
-            lastConfirmedAndEntry.close();
+            assertEquals(3L, lastConfirmedAndEntryFoo.getLastAddConfirmed());
+            assertArrayEquals(dataFoo, lastConfirmedAndEntryFoo.getEntry().getEntryBytes());
+            lastConfirmedAndEntryFoo.close();
+
+            // test readLastAddConfirmedAndEntry
+            LastConfirmedAndEntry lastConfirmedAndEntryBar =
+                    reader.readLastAddConfirmedAndEntry(3, 999, false);
+            assertEquals(3L, lastConfirmedAndEntryBar.getLastAddConfirmed());
+            assertArrayEquals(dataBar, lastConfirmedAndEntryBar.getEntry().getEntryBytes());
+            lastConfirmedAndEntryBar.close();
         }
     }
 
