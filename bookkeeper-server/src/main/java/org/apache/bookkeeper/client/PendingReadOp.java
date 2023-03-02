@@ -471,7 +471,7 @@ class PendingReadOp implements ReadEntryCallback, Runnable {
         this.isRecoveryRead = isRecoveryRead;
 
         this.allowFailFast = false;
-        numPendingEntries = endEntryId - startEntryId + 1;
+        numPendingEntries = Math.max(startEntryId, endEntryId) - Math.min(startEntryId, endEntryId) + 1;
         requiredBookiesMissingEntryForRecovery = getLedgerMetadata().getWriteQuorumSize()
                 - getLedgerMetadata().getAckQuorumSize() + 1;
         heardFromHosts = new HashSet<>();
@@ -538,9 +538,41 @@ class PendingReadOp implements ReadEntryCallback, Runnable {
         }
     }
 
+    void initiateReversed() {
+        long nextEnsembleChange = startEntryId, i = startEntryId;
+        this.requestTimeNanos = MathUtils.nowInNano();
+        List<BookieId> ensemble = null;
+        do {
+            if (i == nextEnsembleChange) {
+                ensemble = getLedgerMetadata().getEnsembleAt(i);
+                nextEnsembleChange = LedgerMetadataUtils.getNextEnsembleChange(getLedgerMetadata(), i);
+            }
+            LedgerEntryRequest entry;
+            if (parallelRead) {
+                entry = new ParallelReadRequest(ensemble, lh.ledgerId, i);
+            } else {
+                entry = new SequenceReadRequest(ensemble, lh.ledgerId, i);
+            }
+            seq.add(entry);
+            i--;
+        } while (i >= endEntryId);
+        // read the entries.
+        for (LedgerEntryRequest entry : seq) {
+            entry.read();
+            if (!parallelRead && clientCtx.getConf().readSpeculativeRequestPolicy.isPresent()) {
+                speculativeTask = clientCtx.getConf().readSpeculativeRequestPolicy.get()
+                        .initiateSpeculativeRequest(clientCtx.getScheduler(), entry);
+            }
+        }
+    }
+
     @Override
     public void run() {
-        initiate();
+        if (startEntryId <= endEntryId) {
+            initiate();
+        } else {
+            initiateReversed();
+        }
     }
 
     private static class ReadContext implements ReadEntryCallbackCtx {

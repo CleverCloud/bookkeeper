@@ -675,14 +675,14 @@ public class LedgerHandle implements WriteHandle {
      */
     public void asyncReadEntries(long firstEntry, long lastEntry, ReadCallback cb, Object ctx) {
         // Little sanity check
-        if (firstEntry < 0 || firstEntry > lastEntry) {
+        if (Math.min(firstEntry, lastEntry) < 0) {
             LOG.error("IncorrectParameterException on ledgerId:{} firstEntry:{} lastEntry:{}",
                     ledgerId, firstEntry, lastEntry);
             cb.readComplete(BKException.Code.IncorrectParameterException, this, null, ctx);
             return;
         }
 
-        if (lastEntry > lastAddConfirmed) {
+        if (Math.max(firstEntry, lastEntry) > lastAddConfirmed) {
             LOG.error("ReadEntries exception on ledgerId:{} firstEntry:{} lastEntry:{} lastAddConfirmed:{}",
                     ledgerId, firstEntry, lastEntry, lastAddConfirmed);
             cb.readComplete(BKException.Code.ReadException, this, null, ctx);
@@ -721,7 +721,7 @@ public class LedgerHandle implements WriteHandle {
      */
     public void asyncReadUnconfirmedEntries(long firstEntry, long lastEntry, ReadCallback cb, Object ctx) {
         // Little sanity check
-        if (firstEntry < 0 || firstEntry > lastEntry) {
+        if (Math.min(firstEntry, lastEntry) < 0) {
             LOG.error("IncorrectParameterException on ledgerId:{} firstEntry:{} lastEntry:{}",
                     ledgerId, firstEntry, lastEntry);
             cb.readComplete(BKException.Code.IncorrectParameterException, this, null, ctx);
@@ -742,13 +742,13 @@ public class LedgerHandle implements WriteHandle {
     @Override
     public CompletableFuture<LedgerEntries> readAsync(long firstEntry, long lastEntry) {
         // Little sanity check
-        if (firstEntry < 0 || firstEntry > lastEntry) {
+        if (Math.min(firstEntry, lastEntry) < 0) {
             LOG.error("IncorrectParameterException on ledgerId:{} firstEntry:{} lastEntry:{}",
                     ledgerId, firstEntry, lastEntry);
             return FutureUtils.exception(new BKIncorrectParameterException());
         }
 
-        if (lastEntry > lastAddConfirmed) {
+        if (Math.max(firstEntry, lastEntry) > lastAddConfirmed) {
             LOG.error("ReadAsync exception on ledgerId:{} firstEntry:{} lastEntry:{} lastAddConfirmed:{}",
                     ledgerId, firstEntry, lastEntry, lastAddConfirmed);
             return FutureUtils.exception(new BKReadException());
@@ -783,7 +783,7 @@ public class LedgerHandle implements WriteHandle {
     @Override
     public CompletableFuture<LedgerEntries> readUnconfirmedAsync(long firstEntry, long lastEntry) {
         // Little sanity check
-        if (firstEntry < 0 || firstEntry > lastEntry) {
+        if (Math.min(firstEntry, lastEntry) < 0) {
             LOG.error("IncorrectParameterException on ledgerId:{} firstEntry:{} lastEntry:{}",
                     ledgerId, firstEntry, lastEntry);
             return FutureUtils.exception(new BKIncorrectParameterException());
